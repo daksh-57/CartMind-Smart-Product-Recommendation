@@ -1,0 +1,71 @@
+product_id,product_name,product_category,product_price
+P001,Wireless Earbuds,Electronics,69835.88
+P002,Smartphone,Electronics,39946.96
+P003,Laptop,Electronics,77385.93
+P004,Power Bank,Electronics,63004.23
+P005,Bluetooth Speaker,Electronics,9199.62
+P006,Smartwatch,Electronics,87824.51
+P007,USB-C Hub,Electronics,68692.66
+P008,Webcam,Electronics,70915.94
+P009,Tablet,Electronics,12226.74
+P010,Gaming Mouse,Electronics,40973.43
+P011,Keyboard,Electronics,33874.18
+P012,Monitor,Electronics,83466.44
+P013,Headphones,Electronics,58231.77
+P014,Portable SSD,Electronics,74189.34
+P015,Cotton T-Shirt,Clothing,2327.39
+P016,Denim Jeans,Clothing,1289.75
+P017,Hoodie,Clothing,2861.01
+P018,Sneakers,Clothing,505.32
+P019,Winter Jacket,Clothing,4171.63
+P020,Casual Shirt,Clothing,3230.99
+P021,Sports Shorts,Clothing,3837.82
+P022,Wool Sweater,Clothing,1900.72
+P023,Cap,Clothing,4858.35
+P024,Socks Pack,Clothing,4485.98
+P025,Belt,Clothing,3935.24
+P026,Raincoat,Clothing,1133.27
+P027,Table Lamp,Home,7133.13
+P028,Bedsheet Set,Home,895.11
+P029,Coffee Maker,Home,2524.77
+P030,Vacuum Cleaner,Home,10323.97
+P031,Cookware Set,Home,11234.24
+P032,Cushion Cover,Home,14519.77
+P033,Wall Clock,Home,5054.92
+P034,Storage Box,Home,5713.28
+P035,Air Fryer,Home,7174.95
+P036,Water Bottle,Home,3043.7
+P037,Desk Organizer,Home,2165.34
+P038,LED Strip,Home,7265.65
+P039,Face Wash,Beauty,643.58
+P040,Moisturizer,Beauty,1706.55
+P041,Lipstick,Beauty,1148.16
+P042,Sunscreen,Beauty,2097.43
+P043,Hair Serum,Beauty,1779.64
+P044,Perfume,Beauty,848.68
+P045,Shampoo,Beauty,2096.42
+P046,Face Mask,Beauty,2030.43
+P047,Nail Kit,Beauty,1028.95
+P048,Body Lotion,Beauty,790.99
+P049,Yoga Mat,Sports,5506.59
+P050,Dumbbells,Sports,1246.06
+P051,Football,Sports,1718.28
+P052,Tennis Racket,Sports,206.79
+P053,Skipping Rope,Sports,6326.36
+P054,Gym Bag,Sports,5368.08
+P055,Resistance Bands,Sports,5684.55
+P056,Cycling Helmet,Sports,6277.72
+P057,Running Shoes,Sports,3751.49
+P058,Water Bladder,Sports,4613.62
+P059,Python Basics,Books,309.77
+P060,Data Science Intro,Books,280.71
+P061,Mystery Novel,Books,917.66
+P062,Self Help Guide,Books,690.76
+P063,Cookbook,Books,799.02
+P064,History of AI,Books,1028.75
+P065,Travel Diary,Books,878.93
+P066,Short Stories,Books,785.62
+P067,Kids Picture Book,Books,792.09
+P068,Business Strategy,Books,498.54
+P069,Poetry Collection,Books,184.44
+P070,Science Comics,Books,651.22
