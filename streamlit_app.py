@@ -375,9 +375,13 @@ def data_tab(raw: pd.DataFrame, featured: pd.DataFrame, metrics: dict) -> None:
         st.markdown("**Category distribution**")
         cat_counts = featured.groupby("product_category").size().sort_values(ascending=True)
         colors = [CATEGORY_COLORS.get(c, "#1E6FFF") for c in cat_counts.index]
-        fig = px.bar(x=cat_counts.values, y=cat_counts.index, orientation="h", color=cat_counts.values, color_continuous_scale=colors, show_legend=False)
-        fig.update_layout(**PLOTLY_LAYOUT, height=240, margin=dict(l=60, r=10, t=10, b=30))
-        fig.update_traces(marker_line_color="rgba(15,23,42,0.15)", marker_line_width=1)
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=cat_counts, y=cat_counts.index, orientation="h",
+            marker=dict(color=colors),
+            line=dict(color="rgba(15,23,42,0.15)", width=1),
+        ))
+        fig.update_layout(**PLOTLY_LAYOUT, height=240, margin=dict(l=60, r=10, t=10, b=30), showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("**Price distribution**")
         fig = px.histogram(featured, x="product_price", nbins=40)
@@ -553,6 +557,7 @@ def render_data_source_selector() -> None:
     st.session_state["data_source"] = data_source
 
     if data_source == "Demo Dataset":
+        st.cache_resource.clear()
         for key in ["upload_interactions", "upload_catalog", "upload_validated", "upload_error",
                      "custom_model", "custom_metrics", "custom_featured",
                      "custom_feature_engineer", "model_trained", "build_requested"]:
@@ -649,6 +654,8 @@ def main() -> None:
     data_source = st.session_state.get("data_source", "Demo Dataset")
 
     if data_source == "Upload Your Dataset":
+        # Ensure demo cache is cleared; uploaded data replaces it entirely
+        st.session_state.pop("model_trained", None)
         if not st.session_state.get("model_trained"):
             if st.session_state.get("upload_validated"):
                 st.info("Click **Build Recommendation System** in the sidebar to start training.")
