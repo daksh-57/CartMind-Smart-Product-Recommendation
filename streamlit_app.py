@@ -308,7 +308,7 @@ def load_system():
     save_artifacts(model, featured, metrics, ARTIFACTS, feature_engineer)
     return model, metrics, featured, feature_engineer, False
 
-def recommend_tab(model, featured, catalog, feature_engineer) -> None:
+def recommend_tab(model, featured, catalog, feature_engineer, metrics) -> None:
     st.subheader("Recommend products")
     col_a, col_b = st.columns([2, 1])
     with col_a:
