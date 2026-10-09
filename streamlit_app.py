@@ -316,11 +316,13 @@ def recommend_tab(model, featured, catalog, feature_engineer) -> None:
         option = st.selectbox("Choose an existing customer ID", existing)
     with col_b:
         new_cust = st.checkbox("Recommend for a new customer")
-    row1 = st.row()
     if new_cust:
-        with row1:
+        c1, c2, c3 = st.columns(3)
+        with c1:
             favourite_category = st.selectbox("Preferred category", sorted(catalog["product_category"].unique()), index=0)
+        with c2:
             previous_purchases = st.number_input("Previous purchases", min_value=0, value=2, step=1)
+        with c3:
             budget = st.number_input("Typical budget (Rs.)", min_value=10.0, value=1500.0, step=50.0)
         profile = profile_from_details(previous_purchases=previous_purchases, favourite_category=favourite_category,
                                        budget=budget, featured=featured, feature_engineer=feature_engineer)
