@@ -12,6 +12,7 @@ from src.recommend import (
     recommend_top_n, recommend_by_popularity,
 )
 from src.train import save_artifacts, train_and_evaluate
+from src.preprocess import REQUIRED_COLUMNS, CATALOG_REQUIRED_COLUMNS
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 ARTIFACTS = ROOT / "artifacts"
@@ -21,10 +22,20 @@ MODEL_PATH = ARTIFACTS / "purchase_model.joblib"
 FEATURED_PATH = ARTIFACTS / "featured_interactions.csv"
 METRICS_PATH = ARTIFACTS / "metrics.joblib"
 FEATURE_ENGINEER_PATH = ARTIFACTS / "feature_engineer.joblib"
-PLOTLY_LAYOUT = dict(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(21,27,46,0.55)",
-                     font=dict(color="#F4F6FF", size=13), margin=dict(l=40, r=20, t=40, b=40))
-CATEGORY_COLORS = {"Electronics": "#7C5CFF", "Clothing": "#FF6B9D", "Home": "#4ECDC4",
-                   "Beauty": "#FFE66D", "Sports": "#95E1D3", "Books": "#A8D8EA"}
+PLOTLY_LAYOUT = dict(
+    paper_bgcolor="white",
+    plot_bgcolor="rgba(240,244,248,1)",
+    font=dict(color="#0F172A", size=13),
+    margin=dict(l=50, r=30, t=40, b=50),
+)
+CATEGORY_COLORS = {
+    "Electronics": "#1E6FFF",
+    "Clothing": "#0EA5E9",
+    "Home": "#06B6D4",
+    "Beauty": "#3B82F6",
+    "Sports": "#10B981",
+    "Books": "#6366F1",
+}
 CATEGORY_EMOJI = {"Electronics": "💻", "Clothing": "👕", "Home": "🏠",
                   "Beauty": "✨", "Sports": "🏅", "Books": "📚"}
 
@@ -32,50 +43,248 @@ CATEGORY_EMOJI = {"Electronics": "💻", "Clothing": "👕", "Home": "🏠",
 def inject_css() -> None:
     st.markdown("""
     <style>
-    .stApp { background: radial-gradient(1200px 600px at 10% -10%, #2a1f5c 0%, #0b1020 42%, #0b1020 100%); }
-    .hero-kicker { color: #b9a8ff; letter-spacing: 0.16em; font-size: 0.78rem; font-weight: 700; }
-    .hero-title { font-size: 2.35rem; font-weight: 800; line-height: 1.15; margin: 0.2rem 0 0.5rem;
-        background: linear-gradient(90deg, #c8b6ff, #8ee3b1);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .hero-sub { color: #c5cbe0; font-size: 1.02rem; max-width: 760px; }
-    .hero-tagline { background: rgba(124,92,255,0.12); border: 1px solid rgba(124,92,255,0.3);
-        border-radius: 12px; padding: 0.75rem 1rem; margin-top: 0.75rem; color: #d9d0ff; font-size: 0.92rem; }
-    .metric-card, .rec-card { background: linear-gradient(180deg, rgba(28,35,58,0.95), rgba(18,24,42,0.95));
-        border: 1px solid rgba(124,92,255,0.28); border-radius: 18px; padding: 1rem 1.1rem; }
-    .rec-rank { font-size: 0.78rem; color: #b9a8ff; font-weight: 700; letter-spacing: 0.08em; }
-    .rec-name { font-size: 1.15rem; font-weight: 800; margin: 0.25rem 0; }
-    .rec-meta { color: #c5cbe0; font-size: 0.92rem; }
-    .prob { font-size: 1.6rem; font-weight: 800; color: #8ee3b1; }
-    .chip { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
-        background: rgba(124,92,255,0.18); color: #d9d0ff; font-size: 0.78rem; margin-right: 0.35rem; }
-    .insights-panel { background: linear-gradient(135deg, rgba(30,25,60,0.95), rgba(15,20,40,0.95));
-        border: 1px solid rgba(124,92,255,0.4); border-radius: 20px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
-    .insights-title { color: #c8b6ff; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
-    .insights-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
-    .insight-item { text-align: center; padding: 0.6rem; border-radius: 12px; background: rgba(124,92,255,0.08); }
-    .insight-value { font-size: 1.4rem; font-weight: 800; color: #8ee3b1; }
-    .insight-label { font-size: 0.75rem; color: #8892b0; margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .insight-category { font-size: 0.85rem; color: #d9d0ff; margin-top: 0.15rem; }
-    .prob-bar-container { height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin: 0.3rem 0; }
+    /* ── Professional Navy/White/Blue Theme ── */
+    .stApp { background: #FFFFFF; }
+    
+    /* ── Hero Section ── */
+    .hero-section {
+        padding: 2rem 1.5rem;
+        background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #1E6FFF 100%);
+        border-radius: 16px;
+        margin-bottom: 1.5rem;
+        color: #FFFFFF;
+    }
+    .hero-kicker {
+        color: #93C5FD;
+        letter-spacing: 0.16em;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1.15;
+        margin: 0.2rem 0 0.5rem;
+        color: #FFFFFF;
+    }
+    .hero-sub {
+        color: #CBD5E1;
+        font-size: 1.05rem;
+        max-width: 720px;
+        line-height: 1.6;
+    }
+    .hero-tagline {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        margin-top: 1rem;
+        color: #E2E8F0;
+        font-size: 0.92rem;
+    }
+    
+    /* ── Metric Cards ── */
+    .metric-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+    }
+    .metric-card:hover {
+        border-color: #1E6FFF;
+        box-shadow: 0 4px 12px rgba(30,111,255,0.12);
+    }
+    
+    /* ── Recommendation Cards ── */
+    .rec-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 1.1rem 1.2rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+        transition: all 0.2s ease;
+    }
+    .rec-card:hover {
+        border-color: #1E6FFF;
+        box-shadow: 0 4px 16px rgba(30,111,255,0.15);
+        transform: translateY(-1px);
+    }
+    .rec-rank {
+        font-size: 0.75rem;
+        color: #1E6FFF;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+    .rec-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0.2rem 0;
+        color: #0F172A;
+    }
+    .rec-meta {
+        color: #64748B;
+        font-size: 0.88rem;
+    }
+    .prob {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #1E6FFF;
+    }
+    .chip {
+        display: inline-block;
+        padding: 0.15rem 0.55rem;
+        border-radius: 999px;
+        background: rgba(30,111,255,0.1);
+        color: #1E6FFF;
+        font-size: 0.78rem;
+        margin-right: 0.35rem;
+        font-weight: 500;
+    }
+    
+    /* ── Insights Panel ── */
+    .insights-panel {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+    }
+    .insights-title {
+        color: #0F172A;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+    .insights-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.75rem;
+    }
+    .insight-item {
+        text-align: center;
+        padding: 0.75rem 0.5rem;
+        border-radius: 12px;
+        background: #F0F4F8;
+    }
+    .insight-value {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #1E6FFF;
+    }
+    .insight-label {
+        font-size: 0.72rem;
+        color: #64748B;
+        margin-top: 0.2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .insight-category {
+        font-size: 0.72rem;
+        color: #94A3B8;
+        margin-top: 0.15rem;
+    }
+    
+    /* ── Feature Cards (Landing Page) ── */
+    .feature-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+        transition: all 0.2s ease;
+    }
+    .feature-card:hover {
+        border-color: #1E6FFF;
+        box-shadow: 0 4px 16px rgba(30,111,255,0.12);
+        transform: translateY(-2px);
+    }
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    .feature-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0F172A;
+        margin-bottom: 0.35rem;
+    }
+    .feature-desc {
+        font-size: 0.88rem;
+        color: #64748B;
+        line-height: 1.5;
+    }
+    
+    /* ── Sidebar & Navigation ── */
+    .sidebar-divider {
+        height: 1px;
+        background: #E2E8F0;
+        margin: 0.75rem 0;
+    }
+    .leakage-notice {
+        background: rgba(30,111,255,0.08);
+        border: 1px solid rgba(30,111,255,0.2);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        color: #1E6FFF;
+    }
+    
+    /* ── Section Headers ── */
+    .section-header {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0F172A;
+        margin: 1.5rem 0 0.75rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 2px solid #1E6FFF;
+        display: inline-block;
+    }
+    
+    /* ── CTA Button ── */
+    .cta-button {
+        background: linear-gradient(135deg, #1E6FFF, #0EA5E9) !important;
+        color: white !important;
+        font-weight: 700 !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 0.6rem 1.5rem !important;
+        font-size: 1rem !important;
+        box-shadow: 0 4px 12px rgba(30,111,255,0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+    .cta-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(30,111,255,0.4) !important;
+    }
+    
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+        .insights-grid { grid-template-columns: repeat(3, 1fr) !important; }
+        .hero-title { font-size: 1.8rem !important; }
+    }
+    .prob-bar-container { height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin: 0.3rem 0; }
     .prob-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
-    .comp-metric { background: rgba(18,24,42,0.9); border: 1px solid rgba(124,92,255,0.25);
+    .comp-metric { background: #F8FAFC; border: 1px solid #E2E8F0;
         border-radius: 14px; padding: 0.85rem 1rem; text-align: center; }
-    .comp-metric-label { font-size: 0.75rem; color: #8892b0; text-transform: uppercase; letter-spacing: 0.05em; }
-    .comp-metric-ml { font-size: 1.3rem; font-weight: 800; color: #8ee3b1; }
-    .comp-metric-baseline { font-size: 1.0rem; font-weight: 600; color: #b9a8ff; }
-    .comp-metric-improve { font-size: 0.82rem; color: #4ade80; font-weight: 700; margin-top: 0.15rem; }
+    .comp-metric-label { font-size: 0.75rem; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; }
+    .comp-metric-ml { font-size: 1.3rem; font-weight: 800; color: #1E6FFF; }
+    .comp-metric-baseline { font-size: 1.0rem; font-weight: 600; color: #94A3B8; }
+    .comp-metric-improve { font-size: 0.82rem; color: #10B981; font-weight: 700; margin-top: 0.15rem; }
     .pipeline-flow { display: flex; align-items: center; justify-content: center; gap: 0; margin: 1.5rem 0; flex-wrap: wrap; }
-    .pipeline-step { background: rgba(124,92,255,0.15); border: 1px solid rgba(124,92,255,0.35);
+    .pipeline-step { background: rgba(30,111,255,0.08); border: 1px solid rgba(30,111,255,0.25);
         border-radius: 12px; padding: 0.7rem 1rem; text-align: center; min-width: 120px; }
     .pipeline-step-icon { font-size: 1.5rem; }
-    .pipeline-step-label { color: #d9d0ff; font-size: 0.85rem; font-weight: 600; margin-top: 0.25rem; }
-    .pipeline-arrow { color: #b9a8ff; font-size: 1.3rem; margin: 0 0.3rem; }
-    .sidebar-logo { font-size: 1.5rem; font-weight: 800; color: #c8b6ff; margin-bottom: 0.25rem; }
-    .sidebar-divider { border: none; border-top: 1px solid rgba(124,92,255,0.2); margin: 0.75rem 0; }
-    .leakage-notice { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.3);
-        border-radius: 10px; padding: 0.6rem 0.9rem; margin-top: 0.75rem; color: #8ee3b1; font-size: 0.82rem; }
-    div.stButton > button { background: #7C5CFF !important; color: #ffffff !important;
-        border: 1px solid #9d87ff !important; font-weight: 700 !important; }
+    .pipeline-step-label { color: #0F172A; font-size: 0.85rem; font-weight: 600; margin-top: 0.25rem; }
+    .pipeline-arrow { color: #1E6FFF; font-size: 1.3rem; margin: 0 0.3rem; }
+    .sidebar-logo { font-size: 1.5rem; font-weight: 800; color: #1E6FFF; margin-bottom: 0.25rem; }
+    div.stButton > button { background: #1E6FFF !important; color: #ffffff !important;
+        border: 1px solid #1E6FFF !important; font-weight: 700 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -117,7 +326,11 @@ def recommend_tab(model, featured, catalog, feature_engineer) -> None:
                                        budget=budget, featured=featured, feature_engineer=feature_engineer)
         label = f"new customer (likes {favourite_category}, budget Rs.{budget:,.0f})"
     else:
-        profile = profile_from_history(option, featured)
+        try:
+            profile = profile_from_history(option, featured)
+        except KeyError as e:
+            st.error(f"⚠️ {e}")
+            return
         label = profile.customer_id
     render_customer_insights(profile)
     ranked = recommend_top_n(model, profile, catalog, featured, top_n=5)
@@ -129,8 +342,7 @@ def recommend_tab(model, featured, catalog, feature_engineer) -> None:
     if ranked.empty:
         st.info("No recommendations could be generated for this customer.")
         return
-    render_comparison_metrics({"precision_at_5_ml":0.42,"recall_at_5_ml":0.38,"ndcg_at_5_ml":0.45,"catalog_coverage_ml":0.65,
-                               "precision_at_5_baseline":0.35,"recall_at_5_baseline":0.30,"ndcg_at_5_baseline":0.38,"catalog_coverage_baseline":0.55})
+    render_comparison_metrics(metrics)
     st.markdown("---")
     st.subheader(f"Top 5 recommendations for {label}")
     recommendation_cards(profile, ranked, pop_ranked)
@@ -141,43 +353,43 @@ def recommendation_cards(profile, ranked: pd.DataFrame, popularity_ranked=None) 
     rank_labels = ["\U0001f947", "\U0001f948", "\U0001f949", "4th", "5th"]
     for i, (_, rec) in enumerate(ranked.iterrows()):
         prob = float(rec["purchase_probability"])
-        bar_color = CATEGORY_COLORS.get(rec["product_category"], "#7C5CFF")
+        bar_color = CATEGORY_COLORS.get(rec["product_category"], "#1E6FFF")
         bar_html = f'<div style="display:flex;align-items:center;gap:0.75rem;"><div style="min-width:120px;"><div class="prob-bar-container"><div class="prob-bar" style="width:{prob*100:.0f}%;background:{bar_color};"></div></div></div><div class="prob" style="font-size:1.3rem;min-width:70px;">{prob:.1%}</div></div>'
-        html = f'<div class="rec-card"><div class="rec-rank">{rank_labels[i]} Rank {i+1} — {rec["product_id"]}</div><div class="rec-name">{rec["product_name"]}</div><div class="rec-meta"><span class="chip">{CATEGORY_EMOJI.get(rec["product_category"], "📦")}{rec["product_category"]}</span><span class="chip">Rs.{rec["product_price"]:,.2f}</span></div><div style="margin:0.5rem 0;">{bar_html}</div><div class="rec-meta" style="color:#8892b0;font-size:0.82rem;">{rec["explanation"]}</div></div>'
+        html = f'<div class="rec-card"><div class="rec-rank">{rank_labels[i]} Rank {i+1} — {rec["product_id"]}</div><div class="rec-name">{rec["product_name"]}</div><div class="rec-meta"><span class="chip">{CATEGORY_EMOJI.get(rec["product_category"], "📦")}{rec["product_category"]}</span><span class="chip">Rs.{rec["product_price"]:,.2f}</span></div><div style="margin:0.5rem 0;">{bar_html}</div><div class="rec-meta" style="color:#64748B;font-size:0.82rem;">{rec["explanation"]}</div></div>'
         st.markdown(html, unsafe_allow_html=True)
 
 def data_tab(raw: pd.DataFrame, featured: pd.DataFrame, metrics: dict) -> None:
     st.subheader("Data pipeline")
     st.caption("Raw data cleaned, duplicated rows removed, and features engineered before training.")
-    st.markdown('<div class="pipeline-flow"><div class="pipeline-step"><div class="pipeline-step-icon">\U0001f4ca</div><div class="pipeline-step-label">Raw Data</div></div><div class="pipeline-arrow">\u2192</div><div class="pipeline-step"><div class="pipeline-step-icon">\U0001f9f9</div><div class="pipeline-step-label">Cleaning</div></div><div class="pipeline-arrow">\u2192</div><div class="pipeline-step"><div class="pipeline-step-icon">\u2699\ufe0f</div><div class="pipeline-step-label">Features</div></div><div class="pipeline-arrow">\u2192</div><div class="pipeline-step"><div class="pipeline-step-icon">\U0001f332</div><div class="pipeline-step-label">Model Train</div></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="pipeline-flow"><div class="pipeline-step"><div class="pipeline-step-icon">📊</div><div class="pipeline-step-label">Raw Data</div></div><div class="pipeline-arrow">→</div><div class="pipeline-step"><div class="pipeline-step-icon">🧹</div><div class="pipeline-step-label">Cleaning</div></div><div class="pipeline-arrow">→</div><div class="pipeline-step"><div class="pipeline-step-icon">⚙️</div><div class="pipeline-step-label">Features</div></div><div class="pipeline-arrow">→</div><div class="pipeline-step"><div class="pipeline-step-icon">🌲</div><div class="pipeline-step-label">Model Train</div></div></div>', unsafe_allow_html=True)
     col_x, col_y = st.columns([2, 1])
     with col_x:
         st.markdown("**Data quality overview**")
         if metrics:
-            st.markdown(f'<div class="metric-card"><div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;"><div><span class="chip">Raw rows</span> {metrics.get("rows_raw", 0)}</div><div><span class="chip">Clean rows</span> {metrics.get("rows_cleaned", 0)}</div><div><span class="chip">Duplicates removed</span> {metrics.get("duplicates_removed", 0)}</div><div><span class="chip">Purchase rate</span> {metrics.get("positive_rate", 0):.2%}</div></div><div class="leakage-notice">\u2705 Anti-leakage: FeatureEngineer stats fitted only on 80% training split. Test-set customers/products get fallback values.</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-card"><div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;"><div><span class="chip">Raw rows</span> {metrics.get("rows_raw", 0)}</div><div><span class="chip">Clean rows</span> {metrics.get("rows_cleaned", 0)}</div><div><span class="chip">Duplicates removed</span> {metrics.get("duplicates_removed", 0)}</div><div><span class="chip">Purchase rate</span> {metrics.get("positive_rate", 0):.2%}</div></div><div class="leakage-notice">✅ Anti-leakage: FeatureEngineer stats fitted only on 80% training split. Test-set customers/products get fallback values.</div></div>', unsafe_allow_html=True)
         st.markdown("**Sample interactions**")
         st.dataframe(featured.head(5), use_container_width=True)
     with col_y:
         st.markdown("**Category distribution**")
         cat_counts = featured.groupby("product_category").size().sort_values(ascending=True)
-        colors = [CATEGORY_COLORS.get(c, "#7C5CFF") for c in cat_counts.index]
+        colors = [CATEGORY_COLORS.get(c, "#1E6FFF") for c in cat_counts.index]
         fig = px.bar(x=cat_counts.values, y=cat_counts.index, orientation="h", color=cat_counts.values, color_continuous_scale=colors, show_legend=False)
         fig.update_layout(**PLOTLY_LAYOUT, height=240, margin=dict(l=60, r=10, t=10, b=30))
-        fig.update_traces(marker_line_color="rgba(255,255,255,0.2)", marker_line_width=1)
+        fig.update_traces(marker_line_color="rgba(15,23,42,0.15)", marker_line_width=1)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("**Price distribution**")
         fig = px.histogram(featured, x="product_price", nbins=40)
         fig.update_layout(**PLOTLY_LAYOUT, height=220, margin=dict(l=40, r=10, t=10, b=30))
-        fig.update_traces(marker_line_color="rgba(124,92,255,0.8)", marker_line_width=1)
+        fig.update_traces(marker_line_color="rgba(30,111,255,0.6)", marker_line_width=1)
         st.plotly_chart(fig, use_container_width=True)
     st.markdown("**Interaction matrix: views vs. cart adds**")
     fig = go.Figure()
     for cat in sorted(featured["product_category"].unique()):
         subset = featured[featured["product_category"] == cat]
         fig.add_trace(go.Scatter(x=subset["times_viewed"], y=subset["times_added_to_cart"], mode="markers", name=cat,
-                                 marker=dict(size=5, color=CATEGORY_COLORS.get(cat, "#7C5CFF"), opacity=0.6)))
+                                 marker=dict(size=5, color=CATEGORY_COLORS.get(cat, "#1E6FFF"), opacity=0.6)))
     fig.add_trace(go.Scatter(x=[0, featured["times_viewed"].max()], y=[0, featured["times_viewed"].max()],
-                             mode="lines", name="views=cart", line=dict(dash="dot", color="#8892b0")))
+                             mode="lines", name="views=cart", line=dict(dash="dot", color="#94A3B8")))
     fig.update_layout(**PLOTLY_LAYOUT, title="Views vs. cart adds per product", xaxis_title="Times viewed",
                       yaxis_title="Times added to cart", height=420)
     st.plotly_chart(fig, use_container_width=True)
@@ -211,10 +423,23 @@ def render_comparison_metrics(metrics: dict) -> None:
 
 
 def render_hero() -> None:
-    st.markdown('<div class="hero-kicker">ML Recommendation Engine · Smart Product Engine</div>'
-        '<div class="hero-title">CartMind</div>'
-        '<div class="hero-sub">A random-forest classifier that learns from customer–product interaction history and ranks the catalogue by predicted purchase probability.</div>'
-        '<div class="hero-tagline">Pipeline: <b>Clean raw interactions</b> → <b>Feature engineering</b> → <b>Random Forest train / evaluate</b> → <b>Rank &amp; recommend Top 5</b> · All statistics fitted on training data only — zero test-set leakage guaranteed.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-section">', unsafe_allow_html=True)
+    st.markdown('<div class="hero-kicker">ML Recommendation Engine · Smart Product Engine</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title">CartMind</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-sub">A random-forest classifier that learns from customer–product interaction history and ranks the catalogue by predicted purchase probability.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-tagline">Pipeline: <b>Clean raw interactions</b> → <b>Feature engineering</b> → <b>Random Forest train / evaluate</b> → <b>Rank &amp; recommend Top 5</b> · All statistics fitted on training data only — zero test-set leakage guaranteed.</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    # Feature cards
+    st.markdown('<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1.5rem;">', unsafe_allow_html=True)
+    features = [
+        ("🛒", "Smart Recommendations", "Top-5 products ranked by predicted purchase probability using an anti-leakage Random Forest."),
+        ("📊", "Real Analytics", "Data quality checks, feature importance, ROC curves, and recommendation metrics — all from real model output."),
+        ("🔒", "Anti-Leakage", "Feature statistics fitted only on the 80% training split. Test-set customers get fallback values."),
+        ("⬇️", "Export Results", "Download top-5 recommendations as CSV with product names, prices, categories, and purchase probabilities."),
+    ]
+    for icon, title, desc in features:
+        st.markdown(f'<div class="feature-card"><div class="feature-icon">{icon}</div><div class="feature-title">{title}</div><div class="feature-desc">{desc}</div></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 def model_tab(metrics: dict) -> None:
@@ -233,23 +458,34 @@ def model_tab(metrics: dict) -> None:
             st.markdown("**Confusion matrix**")
             st.markdown(f"**TN/FP** {cm[0][0]:.0f} / {cm[0][1]:.0f}\n**FN/TP** {cm[1][0]:.0f} / {cm[1][1]:.0f}")
     st.markdown("---")
+    # Show recommendation metrics prominently
+    rec_m = metrics
+    has_rec = any(k in rec_m for k in ["precision_at_5_ml", "recall_at_5_ml", "ndcg_at_5_ml"])
+    if has_rec:
+        st.subheader("Recommendation Metrics")
+        st.caption("Computed on held-out test set — ML model vs. popularity baseline")
+        rows = [
+            ("Precision@5", rec_m.get("precision_at_5_ml", 0), rec_m.get("precision_at_5_baseline", 0)),
+            ("Recall@5", rec_m.get("recall_at_5_ml", 0), rec_m.get("recall_at_5_baseline", 0)),
+            ("NDCG@5", rec_m.get("ndcg_at_5_ml", 0), rec_m.get("ndcg_at_5_baseline", 0)),
+            ("Catalog Coverage", rec_m.get("catalog_coverage_ml", 0), rec_m.get("catalog_coverage_baseline", 0)),
+        ]
+        cols = st.columns(len(rows), gap="small")
+        for i, (label, ml_v, base_v) in enumerate(rows):
+            with cols[i]:
+                pct = ((ml_v - base_v) / max(base_v, 1e-9)) * 100
+                imp = f"↑ {pct:+.1f}%" if pct > 0 else f"→ {pct:+.1f}%"
+                st.markdown(f'<div class="comp-metric"><div class="comp-metric-label">{label}</div><div class="comp-metric-ml">{ml_v:.3f}</div><div class="comp-metric-baseline">Baseline: {base_v:.3f}</div><div class="comp-metric-improve">{imp}</div></div>', unsafe_allow_html=True)
+        st.caption(f"Test customers evaluated: {rec_m.get('n_test_customers', 0)}")
+    st.markdown("---")
     with st.expander("Classification report"):
         st.code(metrics.get("classification_report", ""), language="text")
-    with st.expander("Recommendation metrics"):
-        if "recommendation_metrics" in metrics:
-            r = metrics["recommendation_metrics"]
-            st.markdown(f"**ML:** P@5={r.get('precision_at_5_ml',0):.3f} R@5={r.get('recall_at_5_ml',0):.3f} NDCG={r.get('ndcg_at_5_ml',0):.3f} Cov={r.get('catalog_coverage_ml',0):.2%}")
-            st.markdown(f"**Base:** P@5={r.get('precision_at_5_baseline',0):.3f} R@5={r.get('recall_at_5_baseline',0):.3f} NDCG={r.get('ndcg_at_5_baseline',0):.3f} Cov={r.get('catalog_coverage_baseline',0):.2%}")
-            st.markdown(f"**Test customers:** {r.get('n_test_customers',0)}")
-        else:
-            st.caption("Run training to see recommendation metrics.")
-    st.markdown("---")
     with st.expander("ROC curve"):
         fpr, tpr = metrics.get("fpr", []), metrics.get("tpr", [])
         if fpr and tpr:
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=fpr, y=tpr, mode="lines", name="ROC", line=dict(color="#8ee3b1", width=3)))
-            fig.add_trace(go.Scatter(x=[0,1], y=[0,1], mode="lines", name="Random", line=dict(dash="dash", color="#8892b0")))
+            fig.add_trace(go.Scatter(x=fpr, y=tpr, mode="lines", name="ROC", line=dict(color="#1E6FFF", width=3)))
+            fig.add_trace(go.Scatter(x=[0,1], y=[0,1], mode="lines", name="Random", line=dict(dash="dash", color="#94A3B8")))
             fig.update_layout(**PLOTLY_LAYOUT, title="ROC curve", xaxis_title="FPR", yaxis_title="TPR", height=380)
             st.plotly_chart(fig, use_container_width=True)
     importance = pd.DataFrame(metrics.get("feature_importance", []))
@@ -261,14 +497,123 @@ def model_tab(metrics: dict) -> None:
 
 def about_tab() -> None:
     st.subheader("How the system works")
-    st.mark('<div class="pipeline-flow" style="margin-bottom:2rem;"><div class="pipeline-step"><div class="pipeline-step-icon">\U0001f4ca</div><div class="pipeline-step-label">1. Data</div></div><div class="pipeline-arrow">\u2192</div><div class="pipeline-step"><div class="pipeline-step-icon">\U0001f9f9</div><div class="pipeline-step-label">2. Cleaning</div></div><div class="pipeline-arrow">\u2192</div><div class="pipeline-step"><div class="pipeline-step-icon">\u2699\ufe0f</div><div class="pipeline-step-label">3. Features</div></div><div class="pipeline-arrow">\u2192</div><div class="pipeline-step"><div class="pipeline-step-icon">\U0001f332</div><div class="pipeline-step-label">4. Model</div></div><div class="pipeline-arrow">\u2192</div><div class="pipeline-step"><div class="pipeline-step-icon">\U0001f3af</div><div class="pipeline-step-label">5. Recommend</div></div></div>', unsafe_allow_html=True)
+    st.mark('<div class="pipeline-flow" style="margin-bottom:2rem;"><div class="pipeline-step"><div class="pipeline-step-icon">📊</div><div class="pipeline-step-label">1. Data</div></div><div class="pipeline-arrow">→</div><div class="pipeline-step"><div class="pipeline-step-icon">🧹</div><div class="pipeline-step-label">2. Cleaning</div></div><div class="pipeline-arrow">→</div><div class="pipeline-step"><div class="pipeline-step-icon">⚙️</div><div class="pipeline-step-label">3. Features</div></div><div class="pipeline-arrow">→</div><div class="pipeline-step"><div class="pipeline-step-icon">🌲</div><div class="pipeline-step-label">4. Model</div></div><div class="pipeline-arrow">→</div><div class="pipeline-step"><div class="pipeline-step-icon">🎯</div><div class="pipeline-step-label">5. Recommend</div></div></div>', unsafe_allow_html=True)
     st.markdown('<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">'
-        '<div class="metric-card"><div style="color:#c8b6ff;font-weight:700;margin-bottom:0.5rem;">\U0001f4ca Data</div><div style="color:#c5cbe0;font-size:0.9rem;">Customer–product history with ID, category, price, views, cart adds, purchases, and previous purchases.</div></div>'
-        '<div class="metric-card"><div style="color:#c8b6ff;font-weight:700;margin-bottom:0.5rem;">\U0001f9f9 Cleaning</div><div style="color:#c5cbe0;font-size:0.9rem;">Drop duplicates, fill missing numeric fields with medians, restore missing categories from the product.</div></div>'
-        '<div class="metric-card"><div style="color:#c8b6ff;font-weight:700;margin-bottom:0.5rem;">\U0001f332 Model</div><div style="color:#c5cbe0;font-size:0.9rem;">Random Forest classifier predicts *will this customer buy this product?* Scored on held-out 20% test set.</div></div>'
+        '<div class="metric-card"><div style="color:#1E6FFF;font-weight:700;margin-bottom:0.5rem;">📊 Data</div><div style="color:#64748B;font-size:0.9rem;">Customer–product history with ID, category, price, views, cart adds, purchases, and previous purchases.</div></div>'
+        '<div class="metric-card"><div style="color:#1E6FFF;font-weight:700;margin-bottom:0.5rem;">🧹 Cleaning</div><div style="color:#64748B;font-size:0.9rem;">Drop duplicates, fill missing numeric fields with medians, restore missing categories from the product.</div></div>'
+        '<div class="metric-card"><div style="color:#1E6FFF;font-weight:700;margin-bottom:0.5rem;">🌲 Model</div><div style="color:#64748B;font-size:0.9rem;">Random Forest classifier predicts *will this customer buy this product?* Scored on held-out 20% test set.</div></div>'
         '</div>', unsafe_allow_html=True)
-    st.markdown('<div class="leakage-notice" style="margin-top:1rem;">\u2705 <b>Anti-Leakage Guarantee:</b> All aggregate statistics are computed only from the <b>training split</b>. Unseen customers/products receive global fallback values — never from test set.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="leakage-notice" style="margin-top:1rem;">✅ <b>Anti-Leakage Guarantee:</b> All aggregate statistics are computed only from the <b>training split</b>. Unseen customers/products receive global fallback values — never from test set.</div>', unsafe_allow_html=True)
     st.markdown("**Why Random Forest?** It handles mixed numeric/category signals, resists overfitting on tabular retail data, and yields probabilities that can be ranked.")
+
+
+def validate_uploaded_data(
+    interactions_raw: pd.DataFrame,
+    catalog_raw: pd.DataFrame,
+) -> tuple[bool, str]:
+    """Validate uploaded DataFrames against the required schema."""
+    missing_inter = [c for c in REQUIRED_COLUMNS if c not in interactions_raw.columns]
+    if missing_inter:
+        return False, f"Interactions CSV is missing required columns: {', '.join(missing_inter)}"
+    missing_cat = [c for c in CATALOG_REQUIRED_COLUMNS if c not in catalog_raw.columns]
+    if missing_cat:
+        return False, f"Product Catalog CSV is missing required columns: {', '.join(missing_cat)}"
+    if interactions_raw.empty:
+        return False, "Interactions CSV is empty — please upload a non-empty file."
+    if catalog_raw.empty:
+        return False, "Product Catalog CSV is empty — please upload a non-empty file."
+    inter_ids = set(str(x) for x in interactions_raw["product_id"].dropna().unique())
+    cat_ids = set(str(x) for x in catalog_raw["product_id"].dropna().unique())
+    orphan = inter_ids - cat_ids
+    if orphan:
+        sample = ', '.join(sorted(orphan)[:10])
+        suffix = "..." if len(orphan) > 10 else ""
+        return False, f"Interactions references {len(orphan)} product(s) not in catalog: {sample}{suffix}"
+    return True, ""
+
+
+@st.cache_resource
+def train_custom_model_cached(interactions_raw: pd.DataFrame) -> tuple:
+    """Train on uploaded data and return (model, metrics, featured, feature_engineer)."""
+    return train_and_evaluate(interactions_raw)
+
+
+def render_data_source_selector() -> None:
+    """Render the DATA SOURCE section in the sidebar."""
+    st.markdown("**DATA SOURCE**")
+    data_source = st.radio(
+        "Choose data source",
+        ["Demo Dataset", "Upload Your Dataset"],
+        key="data_source_radio",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    st.session_state["data_source"] = data_source
+
+    if data_source == "Demo Dataset":
+        for key in ["upload_interactions", "upload_catalog", "upload_validated", "upload_error",
+                     "custom_model", "custom_metrics", "custom_featured",
+                     "custom_feature_engineer", "model_trained", "build_requested"]:
+            st.session_state.pop(key, None)
+        return
+
+    st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+    st.markdown("**1. Historical Interactions**")
+    interactions_file = st.file_uploader(
+        "Upload historical_interactions.csv", type=["csv"],
+        key="uploader_interactions", label_visibility="collapsed",
+    )
+    st.markdown("**2. Product Catalog**")
+    catalog_file = st.file_uploader(
+        "Upload product_catalog.csv", type=["csv"],
+        key="uploader_catalog", label_visibility="collapsed",
+    )
+
+    has_both = interactions_file is not None and catalog_file is not None
+
+    if has_both:
+        try:
+            interactions_raw = pd.read_csv(interactions_file)
+            catalog_raw = pd.read_csv(catalog_file)
+        except Exception as exc:
+            st.session_state["upload_error"] = f"Error reading CSV files: {exc}"
+            return
+
+        st.session_state["upload_interactions"] = interactions_raw
+        st.session_state["upload_catalog"] = catalog_raw
+
+        is_valid, err = validate_uploaded_data(interactions_raw, catalog_raw)
+        if not is_valid:
+            st.session_state["upload_error"] = err
+            st.session_state["upload_validated"] = False
+            st.error(err)
+            return
+
+        st.session_state["upload_error"] = ""
+        st.session_state["upload_validated"] = True
+        st.success("✅ Both files uploaded and validated successfully!")
+
+    if has_both and st.session_state.get("upload_validated"):
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+        if st.button("🏗️ Build Recommendation System", use_container_width=True, key="build_btn"):
+            st.session_state["build_requested"] = True
+            st.rerun()
+
+    if st.session_state.get("build_requested") and st.session_state.get("upload_validated"):
+        st.session_state["build_requested"] = False
+        interactions_raw = st.session_state["upload_interactions"]
+        try:
+            with st.spinner("Training model on your dataset…"):
+                model, metrics, featured, feature_engineer = train_custom_model_cached(interactions_raw)
+            st.session_state["custom_model"] = model
+            st.session_state["custom_metrics"] = metrics
+            st.session_state["custom_featured"] = featured
+            st.session_state["custom_feature_engineer"] = feature_engineer
+            st.session_state["model_trained"] = True
+            st.success("✅ Model trained successfully on your dataset!")
+        except Exception as exc:
+            st.session_state["model_trained"] = False
+            st.error(f"Training failed: {exc}")
 
 
 def main() -> None:
@@ -276,6 +621,7 @@ def main() -> None:
     with st.sidebar:
         st.markdown('<div class="sidebar-logo">🛒 CartMind</div>', unsafe_allow_html=True)
         st.caption("ML Recommendation Engine · Competition Demo")
+        render_data_source_selector()
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
         st.markdown("**Pipeline**")
         st.write("Clean → features → Random Forest → Top 5 rank")
@@ -284,15 +630,51 @@ def main() -> None:
         st.caption("Random Forest · 180 trees · max_depth=12")
         st.caption("Class-balanced · random_state=42")
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown("**Dataset**")
-        st.write("Historical customer–product interactions")
-        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
         if st.button("Retrain Model", use_container_width=True):
             st.cache_resource.clear()
+            for key in [
+                "custom_model", "custom_metrics", "custom_featured",
+                "custom_feature_engineer", "model_trained", "build_requested",
+                "upload_validated", "upload_error",
+            ]:
+                st.session_state.pop(key, None)
             st.rerun()
         st.markdown('<div class="leakage-notice" style="margin-top:0.5rem;">Anti-leakage: stats fitted on train split only</div>', unsafe_allow_html=True)
         st.caption("Deploy with Streamlit Community Cloud. Main file: `streamlit_app.py`.")
+
     render_hero()
+
+    data_source = st.session_state.get("data_source", "Demo Dataset")
+
+    if data_source == "Upload Your Dataset":
+        if not st.session_state.get("model_trained"):
+            if st.session_state.get("upload_validated"):
+                st.info("Click **Build Recommendation System** in the sidebar to start training.")
+            elif st.session_state.get("upload_error"):
+                pass
+            else:
+                st.info("Please upload both CSV files and validate them before training.")
+            return
+
+        model = st.session_state["custom_model"]
+        metrics = st.session_state["custom_metrics"]
+        featured = st.session_state["custom_featured"]
+        feature_engineer = st.session_state["custom_feature_engineer"]
+        catalog = st.session_state["upload_catalog"]
+        interactions_raw = st.session_state["upload_interactions"]
+
+        st.success("✅ Model trained successfully on your uploaded dataset")
+        rec, data, model_page, about = st.tabs(["Recommend", "Data pipeline", "Model performance", "How it works"])
+        with rec:
+            recommend_tab(model, featured, catalog, feature_engineer)
+        with data:
+            data_tab(interactions_raw, featured, metrics)
+        with model_page:
+            model_tab(metrics)
+        with about:
+            about_tab()
+        return
+
     try:
         with st.spinner("Loading model (using saved artifacts if available)..."):
             model, metrics, featured, feature_engineer, from_cache = load_system()

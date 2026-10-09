@@ -16,6 +16,13 @@ REQUIRED_COLUMNS = [
     "previous_purchases",
 ]
 
+CATALOG_REQUIRED_COLUMNS = [
+    "product_id",
+    "product_name",
+    "product_category",
+    "product_price",
+]
+
 
 def clean_interactions(df: pd.DataFrame) -> pd.DataFrame:
     data = df.copy()
