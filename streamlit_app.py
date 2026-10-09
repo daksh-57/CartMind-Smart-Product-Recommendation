@@ -668,7 +668,7 @@ def main() -> None:
         st.success("✅ Model trained successfully on your uploaded dataset")
         rec, data, model_page, about = st.tabs(["Recommend", "Data pipeline", "Model performance", "How it works"])
         with rec:
-            recommend_tab(model, featured, catalog, feature_engineer)
+            recommend_tab(model, featured, catalog, feature_engineer, metrics)
         with data:
             data_tab(interactions_raw, featured, metrics)
         with model_page:
@@ -688,7 +688,7 @@ def main() -> None:
         catalog = pd.read_csv(CATALOG_PATH)
         rec, data, model_page, about = st.tabs(["Recommend", "Data pipeline", "Model performance", "How it works"])
         with rec:
-            recommend_tab(model, featured, catalog, feature_engineer)
+            recommend_tab(model, featured, catalog, feature_engineer, metrics)
         with data:
             data_tab(raw, featured, metrics)
         with model_page:
